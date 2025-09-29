@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agendamento Operador - TECBOATE</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+        }
+        .form-section {
+            display: none;
+            margin-top: 20px;
+        }
+        .form-section.active {
+            display: block;
+        }
+        .summary, .agenda-info {
+            background-color: #1a237e;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        /* Nova regra para o estilo dos itens do resumo */
+        .summary-item {
+            font-size: 16px;
+            font-weight: bold;
+            color: #FFFF00; /* amarelo */
+            margin: 5px 0;
+        }
+        /* Nova regra para os títulos (labels) */
+        .summary-item-label {
+            font-weight: bold;
+            font-size: 16px;
+            color: #FFFF00; /* cinza */
+        }
+        /* Nova regra para os dados */
+        .summary-item-data {
+            font-weight: bold;
+            font-size: 16px;
+            color: #FFFF00; /* amarelo */
+        }
+        .agenda-info h3 {
+            font-size: 16px;
+            color:#e0e0e0;
+            margin-bottom: 8px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ccc;
+        }
+        input[type="tel"],
+        input[type="text"],
+        input[type="time"],
+        input[type="date"],
+        select {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: #333;
+            color: #e0e0e0;
+            border: 1px solid #555;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1.2em;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        button:hover:not(:disabled) {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #a0a0a0;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background-color: #5a6268;
+        }
+        .btn-secondary:hover:not(.selected) {
+            background-color: #007bff;
+        }
+        .message {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+        .agendamento-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px solid #444;
+        }
+        .agendamento-item:last-child {
+            border-bottom: none;
+        }
+        .agendamento-cancel-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            width: auto;
+            margin-bottom: 0;
+        }
+        .agendamento-cancel-btn:hover {
+            background-color: #c82333;
+        }
+
+        .btn-cancelar-todos {
+            background-color: #dc3545;
+        }
+        .btn-cancelar-todos:hover {
+            background-color: #c82333;
+        }
+
+        .period-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .period-button {
+            flex: 1;
+            background-color: #333;
+            color: #e0e0e0;
+            border: 1px solid #555;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.1em;
+            text-align: center;
+        }
+        .period-button.selected {
+            background-color: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+            font-weight: bold;
+        }
+        .period-button:hover:not(.selected) {
+            background-color: #444;
+        }
+        .horario-agendado {
+              color: #FFC107;
+         }
+         .horario-agendado-atende {
+              color: #FFC107;
+         }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <button onclick="window.location.href='index.html'" class="btn-secondary" style="width: auto;">Voltar</button>
+    <h1>Agendar para Cliente</h1>
+    <div id="step-1" class="form-section active">
+        <h2>Identificação do Cliente</h2>
+        <label for="celular">Celular:</label>
+        <input type="tel" id="celular" placeholder="Ex: (99) 99999-9999" required>
+        <div id="client-info" class="agenda-info" style="display: none;">
+            <p id="client-history-message"></p>
+        </div>
+        <label for="nick">Apelido do Cliente (Obrigatório):</label>
+        <input type="text" id="nick" required>
+        <button onclick="proximoPasso(1)">Próximo</button>
+    </div>
+
+    <div id="step-2" class="form-section">
+        <h2>Escolha a Sala</h2>
+        <div class="summary" id="summary-step-1"></div>
+        <label for="select-sala">Selecione a Sala:</label>
+        <select id="select-sala"></select>
+        <button onclick="proximoPasso(2)">Próximo</button>
+        <button class="btn-secondary" onclick="voltarPasso(2)">Voltar</button>
+    </div>
+
+    <div id="step-3" class="form-section">
+        <h2>Escolha a Atendente</h2>
+        <div class="summary" id="summary-step-2"></div>
+        <div class="agenda-info" style="margin-top: 20px;">
+            <h3>Outros agendamentos do cliente:</h3>
+            <div id="agendamentos-do-cliente"></div>
+                 <button id="cancelar-todos-btn" class="btn-cancelar-todos" style=" onclick="cancelarTodosAgendamentos('${ag.idsala}', '${ag.telefone}', '${ag.cliente}')">Cancelar Todos</button>
+        </div>
+        <label for="select-atendente">Selecione o Atendente:</label>
+        <select id="select-atendente"></select>
+        <button onclick="proximoPasso(3)">Próximo</button>
+        <button class="btn-secondary" onclick="voltarPasso(3)">Voltar</button>
+    </div>
+
+    <div id="step-4" class="form-section">
+        <h2>Detalhes do Agendamento</h2>
+        <div class="summary" id="summary-step-3"></div>
+        
+        <div class="agenda-info">
+            <h3>Horários já agendados com a atendente:</h3>
+            <p id="horarios-existentes"></p>
+        </div>
+        
+        <label for="data-agendamento">Data:</label>
+        <input type="date" id="data-movimento"  disabled required> 
+
+        <label for="hora-agendamento">Horário Desejado (HH:MM):</label>
+        <input type="text" id="hora-agendamento" placeholder="Ex: 14:00" required>
+        
+        <label>Período do Agendamento:</label>
+        <div class="period-buttons">
+            <button type="button" class="period-button" data-period="30" onclick="selecionarPeriodo(this, 30)">30 minutos</button>
+            <button type="button" class="period-button" data-period="60" onclick="selecionarPeriodo(this, 60)">1 hora</button>
+        </div>
+        <input type="hidden" id="selected-period" value=""> 
+
+        <button onclick="confirmarAgendamento()">Confirmar Agendamento</button>
+        <button class="btn-secondary" onclick="voltarPasso(4)">Voltar</button>
+    </div>
+
+    <div id="step-5" class="form-section">
+        <h2>Resumo do Agendamento</h2>
+        <div class="summary" id="resumo-agendamento"></div>
+        <button id="finalizar-btn" onclick="finalizarAgendamento()">Finalizar Agendamento</button>
+        <button class="btn-secondary" onclick="voltarPasso(5)">Voltar</button>
+    </div>
+
+    <div class="message" id="message-box"></div>
+</div>
+
+<footer class="text-center text-xs text-gray-500 mt-4">
+    Versão do Backend: <span id="backend-version">...</span>
+</footer>
+
+<script src="config.js"></script>
+<script>
+    // const API_BASE_URL = 'http://localhost:8080/api';
+    //const API_BASE_URL = 'http://192.168.1.132:8080/api';
+    console.log(API_BASE_URL);
+    let cliente = {};
+    let agendamento = {};
+    let agendamentosDoCliente = [];
+    let salasPermitidas = [];
+
+    function showMessage(message, type) {
+        const msgBox = document.getElementById('message-box');
+        msgBox.textContent = message;
+        msgBox.className = `message ${type}`;
+    }
+
+    async function buscarVersaoBackend() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/version`);
+            if (response.ok) {
+                const data = await response.json();
+                document.getElementById('backend-version').textContent = data.version;
+            } else {
+                document.getElementById('backend-version').textContent = 'Erro ao carregar';
+            }
+        } catch (error) {
+            console.error('Erro ao buscar versão do backend:', error);
+            document.getElementById('backend-version').textContent = 'Erro de conexão';
+        }
+    }
+
+    // Função para buscar cliente por telefone
+    async function buscarClientePorTelefone(telefone) {
+        const nickInput = document.getElementById('nick');
+        const clientInfoDiv = document.getElementById('client-info');
+        const clientHistoryMessage = document.getElementById('client-history-message');
+        
+        if (!telefone) {
+            clientInfoDiv.style.display = 'none';
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/clientes/telefone/${telefone}`);
+            const data = await response.json();
+
+            if (data.encontrado) {
+                // CORREÇÃO: Armazena o ID do cliente retornado pelo backend
+                cliente.idcliente = data.idcliente; 
+                nickInput.value = data.nick;
+                nickInput.disabled = true;
+                
+                let mensagem = `Olá, ${data.nick}!`;
+                if (data.ultimoAgendamento) {
+                    mensagem += `<br>Último agendamento: ${data.ultimoAgendamento.dia} às ${data.ultimoAgendamento.hora}.`;
+                }
+                clientHistoryMessage.innerHTML = mensagem;
+                clientInfoDiv.style.display = 'block';
+                showMessage('', ''); // Limpa a mensagem de erro
+            }
+        } catch (error) {
+            console.error("Erro ao buscar cliente:", error);
+            clientInfoDiv.style.display = 'none';
+        }
+    }
+
+    function proximoPasso(passoAtual) {
+        const formSections = document.querySelectorAll('.form-section');
+        formSections.forEach(section => section.classList.remove('active'));
+        showMessage('', '');
+         if (passoAtual + 1 === 3) {
+            const dataInput = document.getElementById('data-movimento');
+            
+            // Adicione a verificação para garantir que o elemento não é null
+            if (dataInput) {
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                const todayFormatted = `${year}-${month}-${day}`;
+                dataInput.value = todayFormatted;
+            }
+        }           
+        if (passoAtual === 1) {
+            const nick = document.getElementById('nick').value.trim();
+            const celular = document.getElementById('celular').value.replace(/\D/g, '').trim();
+            
+            if (nick === '' || celular === '') {
+                showMessage('O apelido e o telefone são obrigatórios.', 'error');
+                document.getElementById('step-1').classList.add('active');
+                return;
+            }
+            cliente.nick = nick.toUpperCase();
+            cliente.celular = celular;
+            
+            document.getElementById('summary-step-1').innerHTML = `
+                <p class="summary-item">Apelido: ${cliente.nick || 'Não informado'}</p>
+                <p class="summary-item">Telefone: ${cliente.celular || 'Não informado'}</p>
+            `;
+            document.getElementById('step-2').classList.add('active');
+            
+            carregarSalasDoOperador();
+
+        } else if (passoAtual === 2) {
+            const selectSala = document.getElementById('select-sala');
+            if (selectSala.value === '') {
+                showMessage('Por favor, selecione uma sala.', 'error');
+                document.getElementById('step-2').classList.add('active');
+                return;
+            }
+            agendamento.idsala = selectSala.value;
+            agendamento.nomeSala = selectSala.options[selectSala.selectedIndex].text;
+            document.getElementById('summary-step-2').textContent = `Sala escolhida: ${agendamento.nomeSala}`;
+            document.getElementById('step-3').classList.add('active');
+            carregarAgendamentosCliente(cliente.celular, agendamento.idsala);
+            carregarAtendentes(agendamento.idsala);
+
+        } else if (passoAtual === 3) {
+            const selectAtendente = document.getElementById('select-atendente');
+            if (selectAtendente.value === '') {
+                showMessage('Por favor, selecione um atendente.', 'error');
+                document.getElementById('step-3').classList.add('active');
+                return;
+            }
+            agendamento.idatendente = selectAtendente.value;
+            agendamento.atendenteNome = selectAtendente.options[selectAtendente.selectedIndex].text;
+            document.getElementById('summary-step-3').innerHTML = `<p class="summary-item">Sala: ${agendamento.nomeSala}</p><p class="summary-item">Atendente: ${agendamento.atendenteNome}</p>`;
+            document.getElementById('step-4').classList.add('active');
+// aqui             
+            carregarAgendaAtendente(agendamento.idsala, agendamento.idatendente) ;          
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            const dataAgendamentoInput = document.getElementById('data-movimento'); // Use o ID correto
+            if (dataAgendamentoInput) {
+                dataAgendamentoInput.value = todayStr;
+            }
+        }
+    }
+
+    function voltarPasso(passoAtual) {
+        const formSections = document.querySelectorAll('.form-section');
+        formSections.forEach(section => section.classList.remove('active'));
+        showMessage('', '');
+
+        if (passoAtual === 2) {
+            document.getElementById('step-1').classList.add('active');
+        } else if (passoAtual === 3) {
+            document.getElementById('step-2').classList.add('active');
+        } else if (passoAtual === 4) {
+            document.getElementById('step-3').classList.add('active');
+        } else if (passoAtual === 5) {
+            document.getElementById('step-4').classList.add('active');
+        }
+    }
+
+    async function carregarSalasDoOperador() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/salas`);
+            const allSalas = await response.json();
+            const select = document.getElementById('select-sala');
+            select.innerHTML = '<option value="">Selecione uma Sala</option>';
+            
+            const salasFiltradas = allSalas.filter(sala => salasPermitidas.includes(sala.idsala));
+            
+            salasFiltradas.forEach(sala => {
+                const option = document.createElement('option');
+                option.value = sala.idsala;
+                option.textContent = sala.nomesala;
+                select.appendChild(option);
+            });
+        } catch (error) {
+            showMessage('Erro ao carregar salas.', 'error');
+        }
+    }
+
+    async function carregarAtendentes(idSala) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/atendentes/${idSala}`);
+            if (!response.ok) {
+                const errorData = await response.json();
+                showMessage(errorData.message || 'Nenhum atendente encontrado para esta sala.', 'error');
+                document.getElementById('select-atendente').innerHTML = '<option value="">Nenhum atendente encontrado</option>';
+                return;
+            }
+            const atendentes = await response.json();
+            const select = document.getElementById('select-atendente');
+            select.innerHTML = '<option value="">Selecione um Atendente</option>';
+            atendentes.forEach(atendente => {
+                const option = document.createElement('option');
+                option.value = atendente.idatendente;
+                option.textContent = atendente.apelido; 
+                select.appendChild(option);
+            });
+        } catch (error) {
+            showMessage('Erro ao carregar atendentes.', 'error');
+        }
+    }
+// aqui 
+async function carregarAgendaAtendente(idsala, idatendente) {
+    const url = `${API_BASE_URL}/agenda-atendente?idsala=${idsala}&idatendente=${idatendente}`;
+
+   try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error('Erro ao carregar a agenda da atendente.');
+        }
+         const data = await response.json();
+        // Lógica para exibir os dados da agenda na tela
+        console.log(data);
+//- aqui
+            const horariosLabel = document.getElementById('horarios-existentes');
+            if (data.horarios.length > 0) {
+                console.error(' entrei ');           
+
+                const listaHorarios = data.horarios.map(h => {
+                    const [horas, minutos] = h.hora.split(':').map(Number);
+                    const horaInicio = new Date();
+                    horaInicio.setHours(horas, minutos, 0, 0);
+
+                    const horaFim = new Date(horaInicio.getTime() + h.periodo * 60000);
+                    const horaFimFormatada = `${String(horaFim.getHours()).padStart(2, '0')}:${String(horaFim.getMinutes()).padStart(2, '0')}`;
+                    return `• Início: ${h.hora} | Período: ${h.periodo} min | Fim: ${horaFimFormatada}`;
+                });
+                horariosLabel.innerHTML = listaHorarios.join('<br>');
+                agendamento.horariosExistentes = data.horarios;
+            } else {
+                horariosLabel.textContent = 'Nenhum horário agendado para hoje.';
+                agendamento.horariosExistentes = [];
+            }
+    } catch (error) {
+        console.error(error.message);
+        throw error;
+    }
+}
+    
+// Função Corrigida: carregarAgendamentosCliente
+async function carregarAgendamentosCliente(telefone, idsala) {
+    const agendamentosClienteDiv = document.getElementById('agendamentos-do-cliente');
+    const cancelarTodosBtn = document.getElementById('cancelar-todos-btn');
+    
+    agendamentosClienteDiv.innerHTML = '';
+    cancelarTodosBtn.style.display = 'none';
+
+    if (!telefone || !idsala) {
+        agendamentosClienteDiv.textContent = 'Telefone ou sala não definidos.';
+        return;
+    }
+
+    try {
+        const params = new URLSearchParams({ telefone, idsala });
+        const url = `${API_BASE_URL}/agendamentos/telefone?${params.toString()}`;
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            if (response.status === 404) {
+                agendamentosClienteDiv.innerHTML = '<p class="text-green-500 text-center">Nenhum agendamento encontrado para este cliente nesta sala.</p>';
+                return;
+            }
+            const errorData = await response.json();
+            throw new Error(errorData.error || `Falha ao buscar agendamentos. Status: ${response.status}`);
+        }
+        
+        const agendamentos = await response.json();
+                
+if (agendamentos.length > 0) {
+    const ul = document.createElement('ul');
+    agendamentos.forEach(ag => {
+        const li = document.createElement('li');
+        li.classList.add('agendamento-item');
+        li.innerHTML = `           
+             <span class="horario-agendado-atende">Atendente: ${ag.atendente}, Horário: ${ag.hora} em ${ag.dia_movimento}</span>
+            <button class="agendamento-cancel-btn" onclick="cancelarAgendamento('${ag.idsala}', ${ag.idatendente}, '${ag.dia_movimento}', '${ag.hora}', '${ag.atendenteNome}', '${ag.cliente}', '${ag.telefone}')">Cancelar</button>
+        `;
+        ul.appendChild(li);
+    });
+    agendamentosClienteDiv.appendChild(ul);
+
+    // Ajuste a lógica do botão 'Cancelar Todos'
+    cancelarTodosBtn.style.display = 'block';
+    const primeiroAgendamento = agendamentos[0];
+    cancelarTodosBtn.onclick = () => {
+        cancelarTodosAgendamentos(primeiroAgendamento.idsala, primeiroAgendamento.telefone, primeiroAgendamento.cliente);
+    };
+
+} else {
+    agendamentosClienteDiv.textContent = 'Nenhum agendamento encontrado para este cliente.';
+    cancelarTodosBtn.style.display = 'none';
+}
+    } catch (error) {
+        console.error('Erro ao buscar agendamentos do cliente:', error);
+        agendamentosClienteDiv.innerHTML = `<p class="text-red-500 text-center">Erro ao buscar agendamentos: ${error.message}</p>`;
+        cancelarTodosBtn.style.display = 'none';
+    }
+}
+
+    async function cancelarAgendamento(idsala, idatendente, dia_mov, hora, atendente, clienteNome, clienteTelefone) {
+        if (!confirm(`Tem certeza que deseja cancelar o agendamento com ${atendente} às ${hora}?`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/agendamentos/cancelar`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idsala, idatendente, dia_mov, hora })
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message || 'Erro ao cancelar agendamento.');
+            }
+            showMessage(data.message, 'success');
+            setTimeout(() => {
+                carregarAgendamentosCliente(cliente.idcliente, idsala);
+            }, 1000);
+        } catch (error) {
+            console.error('Erro no cancelamento:', error);
+            showMessage(error.message, 'error');
+        }
+    }
+
+    async function cancelarTodosAgendamentos(idsala, clienteTelefone,clienteNome) {
+        if (!confirm("Tem certeza que deseja cancelar TODOS os agendamentos do cliente?")) {
+            return;
+        }
+
+        try {
+
+            const response = await fetch(`${API_BASE_URL}/agendamentos/cancelar/todos`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cliente: clienteNome, telefone:clienteTelefone, idsala: idsala })
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message || 'Erro ao cancelar todos os agendamentos.');
+            }
+            showMessage(data.message, 'success');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } catch (error) {
+            console.error('Erro no cancelamento em massa:', error);
+            showMessage(error.message, 'error');
+        }
+    }
+
+    function selecionarPeriodo(button, period) {
+        const periodButtons = document.querySelectorAll('.period-button');
+        periodButtons.forEach(btn => btn.classList.remove('selected'));
+        button.classList.add('selected');
+        document.getElementById('selected-period').value = period;
+
+        const horaInput = document.getElementById('hora-agendamento');
+        let valorHora = horaInput.value.trim();
+
+        if (valorHora.length > 0 && !valorHora.includes(':')) {
+            valorHora = valorHora.padStart(2, '0');
+
+            if (/^\d{1,2}$/.test(valorHora)) {
+                let horaInt = parseInt(valorHora, 10);
+                if (horaInt >= 0 && horaInt <= 23) {
+                    horaInput.value = `${valorHora}:00`;
+                }
+            }
+        }
+    }
+
+    async function buscarHorariosAtendente() {
+        try {
+            const data = document.getElementById('data-movimento').value;
+
+           console.error('data-2 :', data);
+
+            if (!data) {
+               showMessage('Por favor, defina uma data e horário válidos.', 'error');
+               return;
+            }
+            const [ano, mes, dia] = data.split('-');
+            const diaMovimento = `${dia}/${mes}/${ano}`;
+
+ console.error('sala-1 :', agendamento.idsala);
+ console.error('atendente-1 :', agendamento.idatendente);
+ console.error('data-1 :', diaMovimento);
+
+            const response = await fetch(`${API_BASE_URL}/agendamentos/atendente?idsala=${agendamento.idsala}&idatendente=${agendamento.idatendente}&dataAgendamento=${diaMovimento}`);
+          
+            
+            if (!response.ok) {
+                // Se a API não encontrar horários, ela retornará 404.
+                // Isso não é um erro, apenas significa que a lista está vazia.
+                return [];
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Erro ao buscar horários existentes:', error);
+            showMessage('Erro ao verificar horários existentes.', 'error');
+            return [];
+        }
+    }
+
+    async function confirmarAgendamento() {
+        const data = document.getElementById('data-movimento').value;
+        const hora = document.getElementById('hora-agendamento').value;
+        const periodo = document.getElementById('selected-period').value;
+        if (!data || !hora || !/^\d{2}:\d{2}$/.test(hora)) {
+            showMessage('Por favor, defina uma data e horário válidos.', 'error');
+            return;
+        }
+        if (!periodo) {
+            showMessage('Por favor, selecione um período de agendamento.', 'error');
+            return;
+        }
+
+        const dataAtual = new Date();
+        const [novaHora, novoMinuto] = hora.split(':').map(Number);
+        
+        const agendamentoDataHora = new Date(dataAtual.getFullYear(), dataAtual.getMonth(), dataAtual.getDate(), novaHora, novoMinuto);
+
+        if (agendamentoDataHora < dataAtual) {
+            showMessage('O horário do agendamento não pode ser menor que a hora atual.', 'error');
+            return;
+        }  
+        
+        // CORREÇÃO: Busca os horários existentes ANTES de tentar iterar sobre eles
+        agendamento.horariosExistentes = await buscarHorariosAtendente();
+  
+        const novoAgendamentoInicio = new Date(1970, 0, 1, novaHora, novoMinuto, 0);
+        const novoAgendamentoFim = new Date(novoAgendamentoInicio.getTime() + parseInt(periodo) * 60000);
+
+        for (const ag of agendamento.horariosExistentes) {
+            const [agHora, agMinuto] = ag.hora.split(':').map(Number);
+            const agInicio = new Date(1970, 0, 1, agHora, agMinuto, 0);
+            const agFim = new Date(agInicio.getTime() + ag.periodo * 60000);
+
+            if (novoAgendamentoInicio < agFim && novoAgendamentoFim > agInicio) {
+                showMessage('Este horário se sobrepõe a um agendamento existente. Por favor, escolha outro.', 'error');
+                return;
+             }
+         }
+    
+        const [ano, mes, dia] = data.split('-');
+        const diaMovimento = `${dia}/${mes}/${ano}`;
+
+        agendamento.dia = diaMovimento;
+        agendamento.hora = hora;
+        agendamento.periodo = periodo;
+
+        const resumoDiv = document.getElementById('resumo-agendamento');
+        resumoDiv.innerHTML = `
+            <p class="summary-item"><b>Sala:</b> ${agendamento.nomeSala}</p>
+            <p class="summary-item"><b>Atendente:</b> ${agendamento.atendenteNome}</p>
+            <p class="summary-item"><b>Cliente:</b> ${cliente.nick}</p>
+            <p class="summary-item"><b>Telefone:</b> ${cliente.celular || 'Não informado'}</p>
+            <p class="summary-item"><b>Data:</b> ${agendamento.dia}</p>
+            <p class="summary-item"><b>Horário:</b> ${agendamento.hora}</p>
+            <p class="summary-item"><b>Período:</b> ${agendamento.periodo} minutos</p>
+        `;
+
+        document.getElementById('step-4').classList.remove('active');
+        document.getElementById('step-5').classList.add('active');
+        showMessage('Por favor, confira os dados e confirme.', 'success');
+    }
+
+async function finalizarAgendamento() {
+        const finalizarBtn = document.getElementById('finalizar-btn');
+        if (finalizarBtn) {
+            finalizarBtn.disabled = true;
+        }
+
+        try {
+            if (!agendamento.idsala || !agendamento.idatendente || !agendamento.hora || !cliente.nick || !cliente.celular) {
+                showMessage('Faltam informações para finalizar. Por favor, volte e preencha todos os campos.', 'error');
+                if (finalizarBtn) {
+                    finalizarBtn.disabled = false;
+                }
+                return;
+            }
+            cliente.celular = cliente.celular.replace(/\D/g, '').trim();
+            const response = await fetch(`${API_BASE_URL}/agendar`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    idsala: agendamento.idsala,
+                    idatendente: agendamento.idatendente,
+                    idcliente: cliente.idcliente,
+                    cliente: cliente.nick,
+                    telefone: cliente.celular,
+                    hora: agendamento.hora,
+                    periodo: parseInt(agendamento.periodo),
+                    proximaChave: agendamento.proximaChave || '',
+                    atendenteNome: agendamento.atendenteNome,
+                    dataAgendamento: agendamento.dia
+                })
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                showMessage(data.message || 'Erro ao finalizar agendamento.', 'error');
+                if (finalizarBtn) {
+                    finalizarBtn.disabled = false;
+                }
+                return;
+            }
+
+            showMessage(data.message, 'success');
+            setTimeout(() => {
+                window.location.reload();
+            }, 3000);
+
+        } catch (error) {
+            console.error('Erro na requisição:', error);
+            showMessage('Erro de conexão ao finalizar agendamento. Verifique o console para mais detalhes.', 'error');
+            if (finalizarBtn) {
+                finalizarBtn.disabled = false;
+            }
+        }
+    }
+
+
+    window.onload = () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const salasParam = urlParams.get('salas');
+        if (salasParam) {
+            try {
+                salasPermitidas = JSON.parse(salasParam);
+            } catch (e) {
+                console.error("Erro ao parsear salas permitidas:", e);
+                salasPermitidas = [];
+            }
+        } else {
+            // Se as salas não vierem da URL, volte para a tela inicial
+            window.location.href='index.html';
+            return;
+        } 
+
+        document.getElementById('celular').addEventListener('input', (event) => {
+            const telefone = event.target.value.replace(/\D/g, '');
+            if (telefone.length >= 8 && telefone.length <= 13) {
+                buscarClientePorTelefone(telefone);
+            } else {
+                const nickInput = document.getElementById('nick');
+                const clientInfoDiv = document.getElementById('client-info');
+                
+                // Limpa os campos e esconde a mensagem
+                nickInput.value = '';
+                nickInput.disabled = false;
+                clientInfoDiv.style.display = 'none';
+                showMessage('', '');
+            }
+        });
+
+        document.getElementById('celular').addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                event.preventDefault(); 
+                document.getElementById('celular').value = '';
+            }
+        });
+
+        document.getElementById('nick').addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                event.preventDefault(); 
+                document.getElementById('nick').value = '';
+            }
+        });
+
+        buscarVersaoBackend();
+    };
+</script>
+
+</body>
+</html>
