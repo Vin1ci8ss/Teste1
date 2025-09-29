@@ -2,7 +2,7 @@
 // Configurações do seu sistema
 // Endereços do Backend
 
-//const API_BASE_URL = 'https://orca-app-dp256.ondigitalocean.app';
+//const 'https://orca-app-dp256.ondigitalocean.app';
 //const WS_URL = 'https://orca-app-dp256.ondigitalocean.app';
 
 //const API_BASE_URL = 'http://localhost:3001';
